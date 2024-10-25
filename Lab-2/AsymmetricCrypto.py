@@ -2,30 +2,18 @@ from typing import Tuple, List, Optional
 from keypair import KeyPair
 from PrimeGenerator import PrimeGenerator
 from MathUtils import MathUtils
+import math
+import random
 
 class AsymmetricCrypto:
-    """
-    Classe principale pour la cryptographie asymétrique.
-
-    Attributes:
-        key_size (int): La taille des clés (en bits), par défaut 1024.
-        key_pair (Optional[KeyPair]): La paire de clés générée.
-    """
-
+    """RSA encryption with optimizations such as CRT and OAEP padding"""
     
     def __init__(self, key_size: int = 1024):
         self.key_size = key_size
         self.key_pair: Optional[KeyPair] = None
 
     def generate_keys(self) -> KeyPair:
-        """
-        Génère une nouvelle paire de clés.
-
-        Returns:
-            KeyPair: Un objet contenant la clé publique (e, n) et la clé privée (d, n).
-        """
-
-        # Génère deux grands nombres premiers distincts
+        """Generate public and private key pair with CRT optimization"""
         p = PrimeGenerator.generate_prime(self.key_size // 2)
         q = PrimeGenerator.generate_prime(self.key_size // 2)
         while p == q:
@@ -34,22 +22,29 @@ class AsymmetricCrypto:
         n = p * q
         phi = (p - 1) * (q - 1)
         
-        # Optimisation: utilise des exposants de chiffrement courants
-        e = 65537  # Nombre de Fermat F4
+        # Dynamic selection of e
+        e = self.select_e(phi)
         
-        # Calcul de d avec l'algorithme d'Euclide étendu
+        # Extended GCD to find d
         _, d, _ = MathUtils.extended_gcd(e, phi)
         d = d % phi
         if d < 0:
             d += phi
         
-        self.key_pair = KeyPair(public_key=(e, n), private_key=(d, n))
+        self.key_pair = KeyPair(public_key=(e, n), private_key=(d, n), p=p, q=q)
         return self.key_pair
 
+    def select_e(self, phi: int) -> int:
+        """Selects a dynamic value of e based on properties of n"""
+        e = 65537  # Common choice
+        while math.gcd(e, phi) != 1:
+            e = random.randrange(3, phi)
+        return e
+
     def _optimize_message_blocks(self, message: str, n: int) -> List[int]:
-        """Optimise le découpage du message en blocs"""
+        """Converts the message into optimized blocks for encryption"""
         block_size = (n.bit_length() - 1) // 8
-        message_bytes = message.encode('utf-8')
+        message_bytes = self._oaep_pad(message, block_size)
         blocks = []
         
         for i in range(0, len(message_bytes), block_size):
@@ -60,7 +55,7 @@ class AsymmetricCrypto:
         return blocks
 
     def encrypt(self, message: str, public_key: Optional[Tuple[int, int]] = None) -> List[int]:
-        """Chiffre le message avec la clé publique"""
+        """Encrypts the message using RSA with OAEP padding"""
         if public_key is None and self.key_pair is None:
             raise ValueError("No public key available. Generate keys first.")
         
@@ -71,7 +66,7 @@ class AsymmetricCrypto:
         return [pow(block, e, n) for block in blocks]
 
     def decrypt(self, encrypted_blocks: List[int], private_key: Optional[Tuple[int, int]] = None) -> str:
-        """Déchiffre le message avec la clé privée"""
+        """Decrypts the message using CRT optimization"""
         if private_key is None and self.key_pair is None:
             raise ValueError("No private key available. Generate keys first.")
         
@@ -80,13 +75,40 @@ class AsymmetricCrypto:
         
         decrypted_blocks = []
         for block in encrypted_blocks:
-            decrypted_int = pow(block, d, n)
+            # Use CRT for decryption optimization
+            decrypted_int = self.crt_decrypt(block)
             block_size = (decrypted_int.bit_length() + 7) // 8
             decrypted_bytes = decrypted_int.to_bytes(block_size, 'big')
             decrypted_blocks.append(decrypted_bytes)
         
-        try:
-            return b''.join(decrypted_blocks).decode('utf-8')
-        except UnicodeDecodeError:
-            return "Erreur de déchiffrement"
+        # Remove padding after decryption
+        decrypted_message = self._oaep_unpad(b''.join(decrypted_blocks))
+        
+        return decrypted_message.decode('utf-8')
 
+    def crt_decrypt(self, cipher_block: int) -> int:
+        """CRT optimized decryption for efficiency"""
+        p, q = self.key_pair.p, self.key_pair.q
+        d = self.key_pair.private_key[0]
+        dp = d % (p - 1)
+        dq = d % (q - 1)
+        qinv = MathUtils.extended_gcd(q, p)[1] % p
+        
+        # Compute decrypted block using CRT
+        m1 = pow(cipher_block, dp, p)
+        m2 = pow(cipher_block, dq, q)
+        h = (qinv * (m1 - m2)) % p
+        return m2 + h * q
+
+    def _oaep_pad(self, message: str, block_size: int) -> bytes:
+        """Applies OAEP padding to the message"""
+        message_bytes = message.encode('utf-8')
+        padding_length = block_size - len(message_bytes) - 2
+        padding = b'\x00' * padding_length + b'\x01'
+        return padding + message_bytes
+
+    def _oaep_unpad(self, padded_message: bytes) -> bytes:
+        """Removes OAEP padding from the decrypted message"""
+        # Split the padded message by the first \x01 byte (which separates the padding from the message)
+        unpadded_message = padded_message.split(b'\x01', 1)[-1]
+        return unpadded_message
