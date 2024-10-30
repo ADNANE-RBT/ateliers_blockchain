@@ -42,29 +42,43 @@
      - `is_chain_valid`: Ensures that each block in the blockchain is correctly linked by validating that every block’s `hash` matches its computed hash and that each block’s `previous_hash` matches the hash of the preceding block.
 
 ---
+Here’s the refactored documentation:
 
-### **main.py** - Executing Proof of Stake (PoS) and Proof of Work (PoW)
+---
 
-1. **Main Function**:
-   - The `main.py` file is the entry point for testing both Proof of Work (PoW) and Proof of Stake (PoS) mechanisms on the blockchain.
-   - **PoW Test**:
-     - A new block is added to the blockchain using PoW.
-     - The difficulty level for mining the block is specified (e.g., `difficulty = 4`), which means the hash must have four leading zeros.
-     - The time taken to mine the block is calculated and printed.
-   
-   - **PoS Test**:
-     - The validators and their respective stakes are defined.
-     - A block is added to the blockchain using the PoS mechanism, and a validator is randomly selected based on the stakes to validate the block.
-     - The time taken for the validation process is calculated and printed.
-   
-   - **Blockchain Validation**:
-     - After the blocks are added using both PoW and PoS, the blockchain is validated to check if the chain is valid, meaning that all blocks are correctly linked and the hash integrity is maintained.
+### **main.py** 
+
+The `main.py` file orchestrates the testing of two consensus mechanisms—**Proof of Work (PoW)** and **Proof of Stake (PoS)**—on a blockchain. The script initializes a blockchain, tests both mechanisms by adding new blocks, records the execution times, and verifies the chain’s validity.
+
+---
+
+### Components of `main.py`
+
+#### **1. Main Function**:
+The main function executes tests for both PoW and PoS, records performance, and validates the blockchain.
+
+- **Initialize Blockchain and Tester**:
+  - An instance of `BlockchainTester` is created to handle PoW and PoS tests on the blockchain, along with sample transaction data.
+
+- **PoW Testing**:
+  - PoW is tested by creating new blocks and setting a range of difficulty levels (e.g., `[2, 4, 6]`).
+  - Each block is mined to meet the specified difficulty by solving a cryptographic puzzle.
+  - Execution time for each difficulty level is recorded and saved in `pow_results.csv` for comparison.
+
+- **PoS Testing**:
+  - PoS is tested with a set of validators and their stakes (e.g., `{"Validator_A": 100, "Validator_B": 50}`).
+  - Blocks are added to the blockchain by randomly selecting validators based on their stakes to simulate validation.
+  - Execution times are recorded for PoS validation rounds and saved in `pos_results.csv`.
+
+- **Blockchain Validation**:
+  - Once PoW and PoS blocks are added, the blockchain’s integrity is checked.
+  - The function verifies that each block’s hash correctly links to the previous one, ensuring chain validity.
 
 ---
 
 ### **Code Execution**:
-- When you run `main.py`, it will first test the PoW mechanism by creating and mining a block with the specified difficulty level.
-- Then, the PoS mechanism will be tested by selecting a validator based on stakes and validating a block.
-- The execution time for both PoW and PoS is printed for comparison.
-- Finally, the blockchain is validated to ensure the chain’s integrity. 
+- **Running `main.py`**:
+  - Tests PoW across varying difficulties and PoS with assigned stakes, recording the execution time for both.
+  - Saves results to separate CSV files for PoW and PoS (`pow_results.csv` and `pos_results.csv`).
+  - Prints whether the blockchain is valid based on the hash integrity of each block in the chain.
 
