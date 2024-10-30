@@ -1,0 +1,4 @@
+Mechanism,Validators,Time,Hash
+PoS,"{'Validator_A': 100, 'Validator_B': 50, 'Validator_C': 30, 'Validator_D': 20, 'Validator_E': 10}",0.0,206e27fa40fdce62389b6c7f25d779ac716f2599b577411cb215039172ccd576
+PoS,"{'Validator_A': 100, 'Validator_B': 50, 'Validator_C': 30, 'Validator_D': 20, 'Validator_E': 10}",0.0,22b9df9019c524760a1fd20caa7d171d182e541e80f4493cd4b4ac4eaa8f513d
+PoS,"{'Validator_A': 100, 'Validator_B': 50, 'Validator_C': 30, 'Validator_D': 20, 'Validator_E': 10}",0.0,cc727d424c26237a73b3151311c79d1d6937f15ad431cf205a98a1bd43207a29

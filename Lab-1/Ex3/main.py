@@ -2,27 +2,63 @@ from Block import Block
 from BlockChain import Blockchain
 from POS import ProofOfStake
 import time
+import csv
+
+class BlockchainTester:
+    def __init__(self):
+        self.blockchain = Blockchain()
+        self.data = "Some transaction data"
+
+    def test_pow(self, difficulties):
+        results = []
+        for difficulty in difficulties:
+            pow_block = Block(index=len(self.blockchain.chain),
+                              previous_hash=self.blockchain.get_last_block().hash,
+                              data=self.data,
+                              timestamp=time.time())
+            pow_time = self.blockchain.add_block_pow(pow_block, difficulty)
+            results.append({
+                "Mechanism": "PoW",
+                "Difficulty": difficulty,
+                "Time": pow_time,
+                "Hash": pow_block.hash
+            })
+        return results
+
+    def test_pos(self, validators):
+        pos_validator = ProofOfStake(validators)
+        results = []
+        for _ in range(3):
+            pos_block = Block(index=len(self.blockchain.chain),
+                              previous_hash=self.blockchain.get_last_block().hash,
+                              data=self.data,
+                              timestamp=time.time())
+            pos_time = self.blockchain.add_block_pos(pos_block, pos_validator)
+            results.append({
+                "Mechanism": "PoS",
+                "Validators": validators,
+                "Time": pos_time,
+                "Hash": pos_block.hash
+            })
+        return results
+
+    def save_results_to_csv(self, filename, results):
+        with open(filename, mode='w', newline='') as file:
+            fieldnames = list(results[0].keys())
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+            writer.writeheader()
+            for result in results:
+                writer.writerow(result)
 
 def main():
-    blockchain = Blockchain()
+    tester = BlockchainTester()
 
-    # Sample data for new blocks
-    data = "Some transaction data"
+    # Test PoW with different difficulties
+    pow_results = tester.test_pow([2, 4, 6])
+    tester.save_results_to_csv("pow_results.csv", pow_results)
 
-    # Test different difficulty levels for PoW
-    print("Testing Proof of Work (PoW) with varying difficulties:")
-    for difficulty in [2, 4, 6]:
-        pow_block = Block(index=len(blockchain.chain),
-                          previous_hash=blockchain.get_last_block().hash,
-                          data=data,
-                          timestamp=time.time())
-        pow_time = blockchain.add_block_pow(pow_block, difficulty)
-        print(f"Block mined with PoW difficulty {difficulty} in {pow_time:.4f} seconds")
-        print(f"Hash: {pow_block.hash}")
-        print()
-
-    # Test Proof of Stake (PoS) with different validator stakes
-    print("Testing Proof of Stake (PoS) with varying validator stakes:")
+    # Test PoS with different validator stakes
     validators = {
         "Validator_A": 100,
         "Validator_B": 50,
@@ -30,20 +66,11 @@ def main():
         "Validator_D": 20,
         "Validator_E": 10
     }
-    pos_validator = ProofOfStake(validators)
-
-    for _ in range(3):
-        pos_block = Block(index=len(blockchain.chain),
-                          previous_hash=blockchain.get_last_block().hash,
-                          data=data,
-                          timestamp=time.time())
-        pos_time = blockchain.add_block_pos(pos_block, pos_validator)
-        print(f"Block validated with PoS in {pos_time:.4f} seconds")
-        print(f"Hash: {pos_block.hash}")
-        print()
+    pos_results = tester.test_pos(validators)
+    tester.save_results_to_csv("pos_results.csv", pos_results)
 
     # Chain validation
-    if blockchain.is_chain_valid():
+    if tester.blockchain.is_chain_valid():
         print("Blockchain is valid.")
     else:
         print("Blockchain is not valid.")
