@@ -2,6 +2,14 @@ import hashlib
 import time
 
 class Block:
+    """
+    Represents a single unit of data in the blockchain. Each Block object stores:
+
+    index: Position in the blockchain.
+    previous_hash: Hash of the previous block to ensure continuity.
+    data: The information stored in the block, e.g., transaction details.
+    timestamp: Creation time.
+    """
     def __init__(self, index, previous_hash, data, timestamp):
         self.index = index
         self.previous_hash = previous_hash
